@@ -20,13 +20,11 @@ jobs:
   # ###
   # Generate variables used by other jobs
   tbuild_vars:
-    if: ${{ github.repository == 'BlackDex/rust-musl' }}
     name: Generate Build Variables
     runs-on: ubuntu-24.04
     env:
-      HAVE_DOCKERHUB_LOGIN: ${{ vars.DOCKERHUB_ENABLED == 'true' && secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
-      HAVE_GHCR_LOGIN: ${{ vars.GHCR_ENABLED == 'true' && github.repository_owner != '' && secrets.GITHUB_TOKEN != '' }}
-      HAVE_QUAY_LOGIN: ${{ vars.QUAY_ENABLED == 'true' && secrets.QUAY_USERNAME != '' && secrets.QUAY_TOKEN != '' }}
+      REPO_NAME: aothen
+      HAVE_GHCR_LOGIN: ${{ vars.GHCR_ENABLED == 'true' && env.aothen != '' && secrets.GITHUB_TOKEN != '' }}
     outputs:
       have_dockerhub_login: ${{ env.HAVE_DOCKERHUB_LOGIN }}
       have_ghcr_login: ${{ env.HAVE_GHCR_LOGIN }}
@@ -68,7 +66,6 @@ jobs:
   # ###
   # Building Toolchain
   toolchain:
-    if: ${{ github.repository == 'BlackDex/rust-musl' }}
     name: Build Toolchain - ${{ matrix.image_tag }} - ${{ matrix.os }}
     needs:
       - tbuild_vars
@@ -148,28 +145,13 @@ jobs:
           docker run -d --name act-registry --network host registry:3 || \
           docker start act-registry || true
 
-      - name: Login to DockerHub
-        if: ${{ needs.tbuild_vars.outputs.have_dockerhub_login == 'true' }}
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Login to ghcr.io
         if: ${{ needs.tbuild_vars.outputs.have_ghcr_login == 'true' }}
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: ${{ env.aothen }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Login to quay.io
-        if: ${{ needs.tbuild_vars.outputs.have_quay_login == 'true' }}
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Generate Container Tags
         continue-on-error: false
@@ -219,7 +201,6 @@ jobs:
   # Merge the separate build amd64 and arm64 builds into one
   # https://docs.docker.com/build/ci/github-actions/multi-platform/#distribute-build-across-multiple-runners
   toolchain_merge:
-    if: ${{ github.repository == 'BlackDex/rust-musl' }}
     name: Merge Toolchain Container
     runs-on: ubuntu-24.04
     permissions:
@@ -268,28 +249,16 @@ jobs:
           docker run -d --name act-registry --network host registry:3 || \
           docker start act-registry || true
 
-      - name: Login to DockerHub
-        if: ${{ needs.tbuild_vars.outputs.have_dockerhub_login == 'true' }}
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to ghcr.io
         if: ${{ needs.tbuild_vars.outputs.have_ghcr_login == 'true' }}
         uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: ${{ env.aothen }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to quay.io
-        if: ${{ needs.tbuild_vars.outputs.have_quay_login == 'true' }}
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_TOKEN }}
+
 
       - name: Create combined manifests for amd64/arm64
         shell: bash

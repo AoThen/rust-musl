@@ -21,9 +21,6 @@ on:
         required: false
         default: ""
 
-  schedule:
-    - cron: '30 9 * * *' # everyday at 09:30 UTC
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
