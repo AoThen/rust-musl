@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       REPO_NAME: aothen
-      HAVE_GHCR_LOGIN: ${{ vars.GHCR_ENABLED == 'true' && env.aothen != '' && secrets.GITHUB_TOKEN != '' }}
+      HAVE_GHCR_LOGIN: ${{ secrets.GITHUB_TOKEN != '' }}
     outputs:
       have_dockerhub_login: ${{ env.HAVE_DOCKERHUB_LOGIN }}
       have_ghcr_login: ${{ env.HAVE_GHCR_LOGIN }}
